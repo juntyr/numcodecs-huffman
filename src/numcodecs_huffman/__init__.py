@@ -114,16 +114,20 @@ class HuffmanCodec(Codec):
         )
 
         table_len = varint.decode_stream(b_io)
+        # FIXME: endianness
         table_keys = np.frombuffer(
-            b_io.read(table_len * dtype.itemsize), dtype=dtype, count=table_len
+            b_io.read(table_len * dtype.itemsize),
+            dtype=_dtype_bits(dtype),
+            count=table_len,
         )
         table = dict()
         for k in table_keys:
             table[k] = (varint.decode_stream(b_io), varint.decode_stream(b_io))
-        table[_EOF] = (varint.decode_stream(b_io), varint.decode_stream(b_io))
+        if len(table) > 0:
+            table[_EOF] = (varint.decode_stream(b_io), varint.decode_stream(b_io))
         huffman = DaHuffmanCodec(table)
 
-        decoded = np.array(huffman.decode(b_io.read())).reshape(shape)
+        decoded = np.array(huffman.decode(b_io.read())).view(dtype).reshape(shape)
 
         return numcodecs.compat.ndarray_copy(decoded, out)  # type: ignore
 
@@ -133,7 +137,7 @@ numcodecs.registry.register_codec(HuffmanCodec)
 
 def _as_bits(a: np.ndarray[S, np.dtype[Any]], /) -> np.ndarray[S, np.dtype[Any]]:
     """
-    Reinterprets the array `a` to its binary representation.
+    Reinterprets the array `a` to its binary (unsigned integer) representation.
 
     Parameters
     ----------
@@ -146,4 +150,23 @@ def _as_bits(a: np.ndarray[S, np.dtype[Any]], /) -> np.ndarray[S, np.dtype[Any]]
         The binary representation of the array `a`.
     """
 
-    return a.view(a.dtype.str.replace("f", "u").replace("i", "u"))  # type: ignore
+    return a.view(_dtype_bits(a.dtype))  # type: ignore
+
+
+def _dtype_bits(dtype: np.dtype) -> np.dtype:
+    """
+    Converts the `dtype` to its binary (unsigned integer) representation.
+
+    Parameters
+    ----------
+    dtype : np.dtype
+        The dtype to convert.
+
+    Returns
+    -------
+    binary : np.dtype
+        The binary dtype with equivalent size and alignment but unsigned
+        integer kind.
+    """
+
+    return np.dtype(dtype.str.replace("f", "u").replace("i", "u"))

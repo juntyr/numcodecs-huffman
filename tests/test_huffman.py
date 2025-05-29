@@ -17,11 +17,12 @@ def check_roundtrip(data: np.ndarray):
 
     assert decoded.dtype == data.dtype
     assert decoded.shape == data.shape
-    assert _as_bits(decoded) == _as_bits(data)
+    assert np.all(_as_bits(decoded) == _as_bits(data))
 
 
 def test_roundtrip():
     check_roundtrip(np.zeros(tuple()))
+    check_roundtrip(np.zeros((0,)))
     check_roundtrip(np.arange(1000).reshape(10, 10, 10))
     check_roundtrip(np.array([np.inf, -np.inf, np.nan, -np.nan, 0.0, -0.0]))
 
