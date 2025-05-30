@@ -5,6 +5,7 @@
 __all__ = ["HuffmanCodec"]
 
 from io import BytesIO
+from sys import byteorder
 from typing import Any, TypeVar
 
 import numcodecs.compat
@@ -70,8 +71,19 @@ class HuffmanCodec(Codec):
             (k, e) for k, e in huffman.get_code_table().items() if k != _EOF
         ]
         message.append(varint.encode(len(table_no_eof)))
-        # FIXME: what about endianness
-        message.append(np.array([k for k, _ in table_no_eof]).tobytes())
+
+        # ensure that the table keys are encoded in little endian binary
+        table_keys_array = np.array([k for k, _ in table_no_eof])
+        table_keys_byteorder = table_keys_array.dtype.byteorder
+        table_keys_byteorder = (
+            table_keys_byteorder
+            if table_keys_byteorder in ("<", ">")
+            else ("<" if (byteorder == "little") else ">")
+        )
+        if table_keys_byteorder != "<":
+            table_keys_array = table_keys_array.byteswap()
+        message.append(table_keys_array.tobytes())
+
         for k, (bitsize, value) in table_no_eof:
             message.append(varint.encode(bitsize))
             message.append(varint.encode(value))
@@ -114,12 +126,23 @@ class HuffmanCodec(Codec):
         )
 
         table_len = varint.decode_stream(b_io)
-        # FIXME: endianness
+
+        # decode the table keys from little endian binary
+        # change them back to dtype_bits byte order
         table_keys = np.frombuffer(
             b_io.read(table_len * dtype.itemsize),
-            dtype=_dtype_bits(dtype),
+            dtype=_dtype_bits(dtype).newbyteorder("<"),
             count=table_len,
         )
+        dtype_bits_byteorder = _dtype_bits(dtype).byteorder
+        dtype_bits_byteorder = (
+            dtype_bits_byteorder
+            if dtype_bits_byteorder in ("<", ">")
+            else ("<" if (byteorder == "little") else ">")
+        )
+        if dtype_bits_byteorder != "<":
+            table_keys = table_keys.byteswap()
+
         table = dict()
         for k in table_keys:
             table[k] = (varint.decode_stream(b_io), varint.decode_stream(b_io))
