@@ -24,6 +24,16 @@ def test_roundtrip():
     check_roundtrip(np.zeros(tuple()))
     check_roundtrip(np.zeros((0,)))
     check_roundtrip(np.arange(1000).reshape(10, 10, 10))
+    check_roundtrip(
+        np.arange(1000)
+        .reshape(10, 10, 10)
+        .astype(np.dtype(np.uint32).newbyteorder("<"))
+    )
+    check_roundtrip(
+        np.arange(1000)
+        .reshape(10, 10, 10)
+        .astype(np.dtype(np.uint32).newbyteorder(">"))
+    )
     check_roundtrip(np.array([np.inf, -np.inf, np.nan, -np.nan, 0.0, -0.0]))
     check_roundtrip(
         np.array(

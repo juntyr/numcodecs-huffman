@@ -5,7 +5,6 @@
 __all__ = ["HuffmanCodec"]
 
 from io import BytesIO
-from sys import byteorder
 from typing import Any, TypeVar
 
 import numcodecs.compat
@@ -74,15 +73,9 @@ class HuffmanCodec(Codec):
 
         # ensure that the table keys are encoded in little endian binary
         table_keys_array = np.array([k for k, _ in table_no_eof])
-        table_keys_byteorder = table_keys_array.dtype.byteorder
-        table_keys_byteorder = (
-            table_keys_byteorder
-            if table_keys_byteorder in ("<", ">")
-            else ("<" if (byteorder == "little") else ">")
+        message.append(
+            table_keys_array.astype(table_keys_array.dtype.newbyteorder("<")).tobytes()
         )
-        if table_keys_byteorder != "<":
-            table_keys_array = table_keys_array.byteswap()
-        message.append(table_keys_array.tobytes())
 
         for k, (bitsize, value) in table_no_eof:
             message.append(varint.encode(bitsize))
@@ -134,14 +127,6 @@ class HuffmanCodec(Codec):
             dtype=_dtype_bits(dtype).newbyteorder("<"),
             count=table_len,
         )
-        dtype_bits_byteorder = _dtype_bits(dtype).byteorder
-        dtype_bits_byteorder = (
-            dtype_bits_byteorder
-            if dtype_bits_byteorder in ("<", ">")
-            else ("<" if (byteorder == "little") else ">")
-        )
-        if dtype_bits_byteorder != "<":
-            table_keys = table_keys.byteswap()
 
         table = dict()
         for k in table_keys:
@@ -150,7 +135,12 @@ class HuffmanCodec(Codec):
             table[_EOF] = (varint.decode_stream(b_io), varint.decode_stream(b_io))
         huffman = DaHuffmanCodec(table)
 
-        decoded = np.array(huffman.decode(b_io.read())).view(dtype).reshape(shape)
+        decoded = (
+            np.array(huffman.decode(b_io.read()))
+            .astype(_dtype_bits(dtype))
+            .view(dtype)
+            .reshape(shape)
+        )
 
         return numcodecs.compat.ndarray_copy(decoded, out)  # type: ignore
 

@@ -1,7 +1,7 @@
 [![image](https://img.shields.io/github/actions/workflow/status/juntyr/numcodecs-huffman/ci.yml?branch=main)](https://github.com/juntyr/numcodecs-huffman/actions/workflows/ci.yml?query=branch%3Amain)
 [![image](https://img.shields.io/pypi/v/numcodecs-huffman.svg)](https://pypi.python.org/pypi/numcodecs-huffman)
 [![image](https://img.shields.io/pypi/l/numcodecs-huffman.svg)](https://github.com/juntyr/numcodecs-huffman/blob/main/LICENSE)
-[![image](https://img.shields.io/pypi/pyversions/numcodecs-huffman.svg)](https://pypi.python.org/pypi/numcodecs-huffman)
+[![image](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Fjuntyr%2Fnumcodecs-huffman%2Frefs%2Fheads%2Fmain%2Fpyproject.toml)](https://pypi.python.org/pypi/numcodecs-huffman)
 [![image](https://readthedocs.org/projects/numcodecs-huffman/badge/?version=latest)](https://numcodecs-huffman.readthedocs.io/en/latest/?badge=latest)
 
 # numcodecs-huffman
