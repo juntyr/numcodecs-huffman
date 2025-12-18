@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "numcodecs-huffman"
-version = "0.1.1"
+version = "0.1.2"
 description = "Huffman codec for the `numcodecs` buffer compression API"
 readme = "README.md"
 license = "MPL-2.0"
@@ -14,7 +14,7 @@ dependencies = [
     "numcodecs>=0.13.0,<0.17",
     "numpy~=2.0",
     "typing-extensions~=4.6",
-    "varint~=1.0",
+    "varint~=1.0.2",
 ]
 
 [dependency-groups]
