@@ -4,17 +4,17 @@ build-backend = "hatchling.build"
 
 [project]
 name = "numcodecs-huffman"
-version = "0.1.2"
+version = "0.1.3"
 description = "Huffman codec for the `numcodecs` buffer compression API"
 readme = "README.md"
 license = "MPL-2.0"
 requires-python = ">=3.10"
 dependencies = [
     "dahuffman~=0.4.0",
+    "leb128~=1.0.8",
     "numcodecs>=0.13.0,<0.17",
     "numpy~=2.0",
     "typing-extensions~=4.6",
-    "varint~=1.0.2",
 ]
 
 [dependency-groups]
@@ -37,5 +37,5 @@ addopts = ["--import-mode=importlib"]
 xfail_strict = true
 
 [[tool.mypy.overrides]]
-module = ["dahuffman.*", "numcodecs.*", "varint.*"]
+module = ["dahuffman.*", "leb128.*", "numcodecs.*"]
 follow_untyped_imports = true

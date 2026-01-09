@@ -7,10 +7,10 @@ __all__ = ["HuffmanCodec"]
 from io import BytesIO
 from typing import Any, TypeVar
 
+import leb128
 import numcodecs.compat
 import numcodecs.registry
 import numpy as np
-import varint
 from dahuffman import HuffmanCodec as DaHuffmanCodec
 from dahuffman.huffmancodec import _EOF
 from numcodecs.abc import Codec
@@ -56,20 +56,20 @@ class HuffmanCodec(Codec):
         encoded = huffman.encode(a)
 
         # message: dtype shape table encoded
-        message = []
+        message: list[bytes | bytearray] = []
 
-        message.append(varint.encode(len(dtype.str)))
+        message.append(leb128.u.encode(len(dtype.str)))
         message.append(dtype.str.encode("ascii"))
 
-        message.append(varint.encode(len(shape)))
+        message.append(leb128.u.encode(len(shape)))
         for s in shape:
-            message.append(varint.encode(s))
+            message.append(leb128.u.encode(s))
 
         table = huffman.get_code_table()
         table_no_eof = [
             (k, e) for k, e in huffman.get_code_table().items() if k != _EOF
         ]
-        message.append(varint.encode(len(table_no_eof)))
+        message.append(leb128.u.encode(len(table_no_eof)))
 
         # ensure that the table keys are encoded in little endian binary
         table_keys_array = np.array([k for k, _ in table_no_eof])
@@ -78,11 +78,11 @@ class HuffmanCodec(Codec):
         )
 
         for k, (bitsize, value) in table_no_eof:
-            message.append(varint.encode(bitsize))
-            message.append(varint.encode(value))
+            message.append(leb128.u.encode(bitsize))
+            message.append(leb128.u.encode(value))
         bitsize, value = table[_EOF]
-        message.append(varint.encode(bitsize))
-        message.append(varint.encode(value))
+        message.append(leb128.u.encode(bitsize))
+        message.append(leb128.u.encode(value))
 
         message.append(encoded)
 
@@ -112,13 +112,14 @@ class HuffmanCodec(Codec):
 
         b_io = BytesIO(b)
 
-        dtype = np.dtype(b_io.read(varint.decode_stream(b_io)).decode("ascii"))
+        dtype = np.dtype(b_io.read(leb128.u.decode_reader(b_io)[0]).decode("ascii"))
 
         shape = tuple(
-            varint.decode_stream(b_io) for _ in range(varint.decode_stream(b_io))
+            leb128.u.decode_reader(b_io)[0]
+            for _ in range(leb128.u.decode_reader(b_io)[0])
         )
 
-        table_len = varint.decode_stream(b_io)
+        table_len, _ = leb128.u.decode_reader(b_io)
 
         # decode the table keys from little endian binary
         # change them back to dtype_bits byte order
@@ -130,9 +131,15 @@ class HuffmanCodec(Codec):
 
         table = dict()
         for k in table_keys:
-            table[k] = (varint.decode_stream(b_io), varint.decode_stream(b_io))
+            table[k] = (
+                leb128.u.decode_reader(b_io)[0],
+                leb128.u.decode_reader(b_io)[0],
+            )
         if len(table) > 0:
-            table[_EOF] = (varint.decode_stream(b_io), varint.decode_stream(b_io))
+            table[_EOF] = (
+                leb128.u.decode_reader(b_io)[0],
+                leb128.u.decode_reader(b_io)[0],
+            )
         huffman = DaHuffmanCodec(table)
 
         decoded = (
